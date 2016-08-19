@@ -27,7 +27,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
       <!--option value="videoplayback.mp4">videoplayback.mp4</option>
       <option value="videos_s_6.mp4">videos_s_6.mp4</option!-->
     </select>
+    <select id="projection" onChange="changeProjection()">
+      <option value="spherical">spherical</option>
+      <option value="flat">flat</option>
+    </select>
     <div class="valiantPhoto" data-video-src="Ricoh Theta S 360° - Third Test - OK.mp4" style="width: 960px; height: 540px;"></div>
+    <p id="fov">FOV = 35<p>
     <video width="960" height="540" controls src="Ricoh Theta S 360° - Third Test - OK.mp4"></video>
 		<script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
 		<script type="text/javascript" src="js/three.min.js"></script>
@@ -37,13 +42,21 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		<script type="text/javascript">
 			$(document).ready(function() {
 				$('.valiantPhoto').Valiant360();
+				$('.valiantPhoto')[0].addEventListener('mousewheel', function(e){
+					$("#fov").text("FOV = "+$('.valiantPhoto').data('plugin_Valiant360')._fov);
+				});
 			});
+
       function changeVideo() {
         var videoFile = document.getElementsByTagName('select')[0].value;
         var video = document.getElementsByTagName('video');
         video[0].src = videoFile;
         video[1].src = videoFile;
       }
+    
+    function changeProjection() {
+      $('.valiantPhoto').data('plugin_Valiant360').options.flatProjection = $("#projection")[0].selectedIndex == 1;
+    }
 		</script>
 	</body>
 </html>
