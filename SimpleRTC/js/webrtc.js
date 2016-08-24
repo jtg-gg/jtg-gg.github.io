@@ -12,7 +12,7 @@ var PHONE = window.PHONE = function(config) {
     var subkey        = config.subscribe_key || 'demo';
     var sessionid     = PUBNUB.uuid();
     var mystream      = null;
-    var myvideo       = document.createElement('video');
+    var myvideo       = config.video || document.createElement('video');
     var myconnection  = false;
     var mediaconf     = config.media || { audio : true, video : true };
     var conversations = {};
@@ -341,7 +341,8 @@ var PHONE = window.PHONE = function(config) {
         // Video Settings
         video.width  = snap.width;
         video.height = snap.height;
-        video.src    = URL.createObjectURL(stream);
+        if (!video.currentSrc)
+            video.src = URL.createObjectURL(stream);
         video.volume = 0.0;
         video.play();
 
@@ -560,7 +561,23 @@ var PHONE = window.PHONE = function(config) {
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     // Main - Request Camera and Mic
     // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    getusermedia()
+    if (config.video) {
+        if (oneway && !broadcast){
+	        if (!PeerConnection){ return unablecb(); }
+	        onready();
+	        subscribe();
+            return;
+        }
+        var stream = config.video.captureStream ? config.video.captureStream() : config.video.mozCaptureStream();
+        if (!stream) return unablecb(stream);
+        mystream = stream;
+        PHONE.mystream = stream;
+        snapshots_setup(stream);
+        onready();
+        subscribe();
+    } else {
+        getusermedia()
+    }
 
     return PHONE;
 };
