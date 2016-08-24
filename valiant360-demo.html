@@ -16,17 +16,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		<meta charset="utf-8">
 
 		<!-- Valiant360 control styles -->
-		<link rel="stylesheet" type="text/css" href="css/valiant360.css" />
+		<link rel="stylesheet" type="text/css" href="valiant360/css/valiant360.css" />
 
 	</head>
 	<body>
     Choose Video
     <select onChange="changeVideo()">
-      <option value="Ricoh Theta S 360° - Third Test - OK.mp4">Ricoh Theta S 360° - Third Test - OK.mp4</option>
-      <option value="comparison.mp4">comparison.mp4</option>
-      <option value="Rickshaw Run 360 - Some Pool R&R.mp4">Rickshaw Run 360 - Some Pool R&R.mp4</option>
-      <!--option value="videoplayback.mp4">videoplayback.mp4</option>
-      <option value="videos_s_6.mp4">videos_s_6.mp4</option!-->
+      <option value="videos/Ricoh Theta S 360° - Third Test - OK.mp4">Ricoh Theta S 360° - Third Test - OK.mp4</option>
+      <option value="videos/comparison.mp4">comparison.mp4</option>
+      <option value="videos/Rickshaw Run 360 - Some Pool RR.mp4">Rickshaw Run 360 - Some Pool RR.mp4</option>
+      <!--option value="videos/videoplayback.mp4">videoplayback.mp4</option>
+      <option value="videos/videos_s_6.mp4">videos_s_6.mp4</option!-->
     </select>
     youtube original link = <a id="youtube" href="" target="_blank"></a>
     <br>Choose Projection
@@ -39,11 +39,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     <div class="valiantPhoto" data-video-src="" style="width: 960px; height: 540px;"></div>
     <br>raw video view<br>
     <video width="960" height="540" controls src=""></video>
-		<script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
-		<script type="text/javascript" src="js/three.min.js"></script>
+		<script type="text/javascript" src="valiant360/js/jquery-1.7.2.min.js"></script>
+		<script type="text/javascript" src="valiant360/js/three.min.js"></script>
 
 		<!-- Valiant360 plugin, load after jQuery and Three.js -->
-		<script type="text/javascript" src="jquery.valiant360.js"></script>
+		<script type="text/javascript" src="valiant360/jquery.valiant360.js"></script>
 		<script type="text/javascript">
 			$(document).ready(function() {
 				$('.valiantPhoto').Valiant360();
