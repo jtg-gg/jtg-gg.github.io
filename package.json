@@ -1,0 +1,9 @@
+{
+  "name": "jtg-gg.github.io",
+  "chromium-args" : "--disable-web-security --enable-experimental-web-platform-features",
+  "main": "index.html",
+  "window": {
+    "title": "jtg-gg.github.io",
+    "toolbar": false
+  }
+}

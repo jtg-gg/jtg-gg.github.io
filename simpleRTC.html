@@ -36,6 +36,15 @@
 	    <input type="submit" name="login_submit" value="Log In">
 	</form>
 -->
+    <br>Choose Video:<br>
+    <select onChange="changeVideo()">
+      <option value="videos/Ricoh Theta S 360° - Third Test - OK.mp4">Ricoh Theta S 360° - Third Test - OK.mp4</option>
+      <option value="videos/comparison.mp4">comparison.mp4</option>
+      <option value="videos/Rickshaw Run 360 - Some Pool RR.mp4">Rickshaw Run 360 - Some Pool RR.mp4</option>
+      <!--option value="videos/videoplayback.mp4">videoplayback.mp4</option>
+       <option value="videos/videos_s_6.mp4">videos_s_6.mp4</option!-->
+    </select>
+
     <form name="loginForm" id="login" action="#" onsubmit="return errWrap(login,this);">
         <span class="input input--nao">
             <input class="input__field input__field--nao" type="text" name="username" id="username" placeholder="Enter A Username"/>
@@ -129,7 +138,8 @@ function login(form) {
 	    session.connected(function(session){
 	                        console.log(session);
 	                        //video_out.appendChild(session.video);
-	                        $('video')[0].src = session.video.src
+	                        $('video')[0].src = session.video.src;
+	                        $('video')[0].play();
 	                        addLog(session.number + " has joined.");
 	                        vidCount++;
 	                      });
@@ -188,6 +198,11 @@ function errWrap(fxn, form){
 		alert("WebRTC is currently only supported by Chrome, Opera, and Firefox");
 		return false;
 	}
+}
+function changeVideo() {
+  var videoFile = $('select')[0].value;
+  var video = $("#sourceVideo");
+  video[0].src = videoFile;
 }
 
 </script>
