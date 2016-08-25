@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="valiant360/css/valiant360.css" />
     <script src="SimpleRTC/js/modernizr.custom.js"></script>
     <link rel="stylesheet" type="text/css" href="SimpleRTC/stylesheets/normalize.css" />
-	<!--style>
+	<style>
 		#vid-box{
 			display: inline-block;
 			text-align:center;
@@ -19,15 +19,16 @@
 		#vid-box video{
 			width:100%;
 		}
-	</style!-->
+	</style>
 </head>
 <body>
-<div id="vid-box" class="valiantPhoto" data-video-src="" style="width: 960px; height: 540px; margin:0 auto;"></div>
+<div id="vid-360" class="valiantPhoto" data-video-src="" style="width: 960px; height: 540px; margin:0 auto;"></div>
 <div class = "bodyDiv">
-
 <!-- =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= -->
 <!-- My Phone Number & Dial Areas -->
 <!-- =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= -->
+	<div id="vid-box" class="video2" style="display: none;"></div>
+  360 video <input name="360video" id="360video" type="checkbox" checked onchange="video360Change(this);">
 	<div id="vid-thumb"></div>
 	<video id="sourceVideo" controls loop> <source src="videos/Ricoh Theta S 360° - Third Test - OK.mp4" type="video/mp4"></video>
 <!--
@@ -37,13 +38,10 @@
 	</form>
 -->
     <div id="chooseVideo"><br>Choose Video:<br>
-    <select onChange="changeVideo()">
-      <option value="videos/Ricoh Theta S 360° - Third Test - OK.mp4">Ricoh Theta S 360° - Third Test - OK.mp4</option>
-      <option value="videos/comparison.mp4">comparison.mp4</option>
-      <option value="videos/Rickshaw Run 360 - Some Pool RR.mp4">Rickshaw Run 360 - Some Pool RR.mp4</option>
-      <!--option value="videos/videoplayback.mp4">videoplayback.mp4</option>
-       <option value="videos/videos_s_6.mp4">videos_s_6.mp4</option!-->
-    </select></div>
+    <select id="selectVideo" onchange="changeVideo()"></select></div>
+    
+    <div id="chooseAudio"  style="display: none;"> <br> Choose Audio:<br>
+    <select id="selectAudio" onchange="changeAudio()"></select></div>
 
     <form name="loginForm" id="login" action="#" onsubmit="return errWrap(login,this);">
         <span class="input input--nao">
@@ -115,37 +113,102 @@
 
 <script type="text/javascript">
 
-var video_out = document.getElementById("vid-box");
+var video_out = document.getElementById("vid-360");
 var vid_thumb = document.getElementById("vid-thumb");
 var vidCount  = 0;
 $('.valiantPhoto').Valiant360();
 
 var sourceVideo = $("#sourceVideo")[0];
 const hasCaptureStream = sourceVideo.captureStream || sourceVideo.mozCaptureStream ? true : false;
-if (!hasCaptureStream) {
-  sourceVideo.parentNode.removeChild(sourceVideo);
-  var chooseVideo = $("#chooseVideo")[0];
-  chooseVideo.parentNode.removeChild(chooseVideo);
+var videoSelect = document.querySelector('select#selectVideo');
+var audioSelect = document.querySelector('select#selectAudio');
+
+function gotSources(sourceInfos) {
+  const videosLength = videoSelect.length;
+  for (var i = 0; i !== sourceInfos.length; ++i) {
+    var sourceInfo = sourceInfos[i];
+    var option = document.createElement('option');
+    option.value = sourceInfo.id;
+    if (sourceInfo.kind === 'audio') {
+      option.text = sourceInfo.label || 'microphone ' +
+      (audioSelect.length + 1);
+      audioSelect.appendChild(option);
+    } else if (sourceInfo.kind === 'video') {
+      option.text = sourceInfo.label || 'camera ' + (videoSelect.length-videosLength + 1);
+      videoSelect.appendChild(option);
+    } else {
+      console.log('Some other kind of source: ', sourceInfo);
+    }
+  }
+}
+
+if(hasCaptureStream){
+  const mp4Sources = [ "videos/Ricoh Theta S 360° - Third Test - OK.mp4",
+    "videos/comparison.mp4",
+    "videos/Rickshaw Run 360 - Some Pool RR.mp4",
+    /*"videos/videoplayback.mp4",
+    "videos/videos_s_6.mp4"*/
+  ];
+  for (var i=0; i<mp4Sources.length; i++) {
+    var option = document.createElement('option');
+    option.value = mp4Sources[i];
+    option.text = mp4Sources[i];
+    videoSelect.appendChild(option);
+  }
+} else {
+  $("#sourceVideo").hide();
+}
+
+if (typeof MediaStreamTrack === 'undefined' ||
+    typeof MediaStreamTrack.getSources === 'undefined') {
+  var option = document.createElement('option');
+  option.value = "Default Camera";
+  option.text = option.value;
+  videoSelect.appendChild(option);
+} else {
+  MediaStreamTrack.getSources(gotSources);
+}
+
+function usingVideos() {
+  return videoSelect.value.startsWith("videos/");
 }
 
 function login(form) {
+  var mediaConstraints = navigator.mozGetUserMedia ? {
+    audio: true,
+    video: {
+      width: {ideal: 1920}, height: {ideal: 1080},
+    }
+  } ://chrome
+  {
+    audio: {
+      optional: [{sourceId: audioSelect.value}]
+    },
+    video: {
+      optional: [{sourceId: videoSelect.value}, {minWidth: 1280}, {minHeight: 720}, {minWidth: 1920}, {minHeight: 960}, {minHeight: 1080}]
+    }
+  };
+
 	var phone = window.phone = PHONE({
 	    number        : form.username.value || "Anonymous", // listen on username line else Anonymous
 	    publish_key   : 'pub-c-561a7378-fa06-4c50-a331-5c0056d0163c', // Your Pub Key
 	    subscribe_key : 'sub-c-17b7db8a-3915-11e4-9868-02ee2ddab7fe', // Your Sub Key
-	    video         : hasCaptureStream ? sourceVideo : null,
+	    video         : usingVideos() ? sourceVideo : null,
+	    media         : mediaConstraints,
 	});
 	var ctrl = window.ctrl = CONTROLLER(phone);
 	ctrl.ready(function(){
 		form.username.style.background="#55ff5b"; 
 		form.login_submit.hidden="true"; 
-		if(!hasCaptureStream)ctrl.addLocalStream(vid_thumb);
+		if(!usingVideos())ctrl.addLocalStream(vid_thumb);
 		addLog("Logged in as " + form.username.value); 
+		$("#chooseVideo").hide();
+		$("#chooseAudio").hide();
 	});
 	ctrl.receive(function(session){
 	    session.connected(function(session){
 	                        console.log(session);
-	                        //video_out.appendChild(session.video);
+	                        $("#vid-box")[0].appendChild(session.video);
 	                        $('video')[0].src = session.video.src;
 	                        $('video')[0].play();
 	                        addLog(session.number + " has joined.");
@@ -203,16 +266,36 @@ function errWrap(fxn, form){
 	try {
 		return fxn(form);
 	} catch(err) {
-		alert("WebRTC is currently only supported by Chrome, Opera, and Firefox");
+		alert(err);
 		return false;
 	}
 }
+
 function changeVideo() {
-  var videoFile = $('select')[0].value;
+  $("#chooseAudio").hide();
   var video = $("#sourceVideo");
-  video[0].src = videoFile;
+  video.show();
+  var videoSrc = videoSelect.value;
+  if (usingVideos()) {
+    video[0].src = videoSrc;
+  } else {
+    if (videoSrc!=="Default Camera") {
+      $("#chooseAudio").show();
+    }
+    video.hide();
+  }
 }
 
+function video360Change(cb) {
+  console.log("360Video " + cb.checked);
+  if (cb.checked) {
+    $("#vid-360").show();
+    $("#vid-box").hide();
+  } else {
+    $("#vid-360").hide();
+    $("#vid-box").show();
+  }
+}
 </script>
 
 <script>
