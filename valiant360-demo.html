@@ -25,10 +25,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
       <option value="videos/Ricoh Theta S 360° - Third Test - OK.mp4">Ricoh Theta S 360° - Third Test - OK.mp4</option>
       <option value="videos/comparison.mp4">comparison.mp4</option>
       <option value="videos/Rickshaw Run 360 - Some Pool RR.mp4">Rickshaw Run 360 - Some Pool RR.mp4</option>
-      <!--option value="videos/videoplayback.mp4">videoplayback.mp4</option>
-      <option value="videos/videos_s_6.mp4">videos_s_6.mp4</option!-->
+      <option value="videos/local">local</option>
     </select>
     youtube original link = <a id="youtube" href="" target="_blank"></a>
+    <br><input type="file" id="localVideo" accept="video/*"/ onchange="loadLocalVideo(this)" style="display: none;">
     <br>Choose Projection
     <select id="projection" onChange="changeProjection()">
       <option value="spherical">spherical</option>
@@ -56,7 +56,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			});
 
       function changeVideo() {
+        $("#localVideo").hide();
         var videoFile = $('select')[0].value;
+        if(videoFile === 'videos/local') {
+          $("#localVideo").show();
+          $("#localVideo").click();
+          return;
+        }
+
         var video = $('video');
         video[0].src = videoFile;
         video[1].src = videoFile;
@@ -72,6 +79,28 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     function changeProjection() {
       $('.valiantPhoto').data('plugin_Valiant360').options.flatProjection = $("#projection")[0].selectedIndex == 1;
     }
+
+    function loadLocalVideo(event) {
+      var video = $('video');
+      var file = event.files[0]
+      var type = file.type
+      var canPlay = video[0].canPlayType(type)
+      if (canPlay === '') canPlay = 'no'
+      var message = 'Can play type "' + type + '": ' + canPlay
+      var isError = canPlay === 'no'
+      console.log(message + ', isError? ' + isError)
+      
+      if (isError) {
+        return
+      }
+      
+      var videoFile = URL.createObjectURL(file)
+      video[0].src = videoFile;
+      video[1].src = videoFile;
+      $("#youtube").text("");
+      $("#youtube").attr("href", "");
+    }
+
 		</script>
 	</body>
 </html>
