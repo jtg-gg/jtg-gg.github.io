@@ -37,10 +37,10 @@
 	    <input type="submit" name="login_submit" value="Log In">
 	</form>
 -->
-    <input type="file" id="localVideo" accept="video/*"/ onchange="loadLocalVideo(this)", style="display: none;">
     <div id="chooseVideo"><br>Choose Video:<br>
     <select id="selectVideo" onchange="changeVideo()"></select></div>
-    
+    <input type="file" id="localVideo" accept="video/*"/ onchange="loadLocalVideo(this)" style="display: none;">
+
     <div id="chooseAudio"  style="display: none;"> <br> Choose Audio:<br>
     <select id="selectAudio" onchange="changeAudio()"></select></div>
 
@@ -274,11 +274,13 @@ function errWrap(fxn, form){
 
 function changeVideo() {
   $("#chooseAudio").hide();
+  $("#localVideo").hide();
   var video = $("#sourceVideo");
   video.show();
   var videoSrc = videoSelect.value;
   if (usingVideos()) {
     if(videoSrc === 'videos/local') {
+      $("#localVideo").show();
       $("#localVideo").click();
     } else {
       sourceVideo.src = videoSrc;
