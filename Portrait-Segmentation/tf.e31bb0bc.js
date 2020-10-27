@@ -112730,14 +112730,14 @@ class Webcam {
   capture() {
     return tf.tidy(() => {
       // Reads the image as a Tensor from the webcam <video> element.
-      const webcamImage = tf.browser.fromPixels(this.webcamElement, 4); //const resizedWebcamImage = tf.image.resizeBilinear(webcamImage, [this.webcamElement.height, this.webcamElement.width])
-      // Crop the image so we're using the center square of the rectangular
+      const webcamImage = tf.browser.fromPixels(this.webcamElement, 4);
+      return this.resizeAndPad(webcamImage).expandDims(0);
+      const resizedWebcamImage = tf.image.resizeBilinear(webcamImage, [this.webcamElement.height, this.webcamElement.width]); // Crop the image so we're using the center square of the rectangular
       // webcam.
-      //const croppedImage = resizedWebcamImage;//this.cropImage(resizedWebcamImage);
-      // Expand the outer most dimension so we have a batch size of 1.
-      //const batchedImage = croppedImage.expandDims(0);
 
-      const batchedImage = this.resizeAndPad(webcamImage).expandDims(0); // Normalize the image between -1 and 1. The image comes in between 0-255,
+      const croppedImage = this.cropImage(resizedWebcamImage); // Expand the outer most dimension so we have a batch size of 1.
+
+      const batchedImage = croppedImage.expandDims(0); // Normalize the image between -1 and 1. The image comes in between 0-255,
       // so we divide by 127 and subtract 1.
 
       return batchedImage; //.toFloat().div(tf.scalar(255)) //.sub(tf.scalar(1));
@@ -112799,12 +112799,13 @@ class Webcam {
 
 
   adjustVideoSize(width, height) {
-    /*const aspectRatio = width / height;
+    const aspectRatio = width / height;
+
     if (width >= height) {
       this.webcamElement.width = aspectRatio * this.webcamElement.height;
     } else if (width < height) {
       this.webcamElement.height = this.webcamElement.width / aspectRatio;
-    }*/
+    }
   }
 
   async setup() {
@@ -112821,7 +112822,9 @@ class Webcam {
         }, stream => {
           this.webcamElement.srcObject = stream;
           this.webcamElement.addEventListener('loadeddata', async () => {
-            this.adjustVideoSize(this.webcamElement.videoWidth, this.webcamElement.videoHeight);
+            /*this.adjustVideoSize(
+                this.webcamElement.videoWidth,
+                this.webcamElement.videoHeight);*/
             resolve();
           }, false);
         }, error => {
@@ -112866,8 +112869,9 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
  * limitations under the License.
  * =============================================================================
  */
-//const LOCAL_MODEL_JSON_URL = './mobilenetv2_total_with_prior_channel/model.json';     
-const LOCAL_MODEL_JSON_URL = './mobilenetv2_supervisely+webcam_288x160/model.json';
+const LOCAL_MODEL_JSON_URL = './mobilenetv2_supervisely+webcam_288x160/model.json'; //const LOCAL_MODEL_JSON_URL = './mobilenetv2_total_with_prior_channel/model.json';
+//const LOCAL_MODEL_JSON_URL = './Dnc_SINet_bi_320_256/model.json';     
+
 const model_width = 288;
 const model_height = 160;
 /**
@@ -112918,6 +112922,7 @@ function get_background() {
 
 let isPredicting = false;
 let isCustomBackground = false;
+let prevMask = 0;
 var init_time = performance.now();
 
 async function predict() {
@@ -112928,10 +112933,11 @@ async function predict() {
     const output = tf.tidy(() => {
       // Capture the frame from the webcam.
       let img = webcam.capture().toFloat();
-      let modelInput = tf.mul(tf.sub(img, [123.68, 103.94, 116.78, 0]), [0.017, 0.017, 0.017, 0]); //convert from RGB to BGR
+      let modelInput = tf.mul(tf.sub(img, [123.68, 116.78, 103.94, 0]), [0.017, 0.017, 0.017, 0]); //convert from RGBA to BGRA
 
       let modelInputColorPlanes = tf.unstack(modelInput, 3);
-      modelInput = tf.stack([modelInputColorPlanes[2], modelInputColorPlanes[1], modelInputColorPlanes[0], modelInputColorPlanes[3]], 3); //modelInput = tf.transpose(modelInput, [0, 3, 1, 2]);
+      modelInput = tf.stack([modelInputColorPlanes[2], modelInputColorPlanes[1], modelInputColorPlanes[0], modelInputColorPlanes[3]], 3);
+      if (prevMask != 0) prevMask.dispose(); //modelInput = tf.transpose(modelInput, [0, 3, 1, 2]);
 
       img = img.div(tf.scalar(255));
       img = img.slice([0, 0, 0, 0], [1, model_height, model_width, 3]); // Inference
@@ -112940,11 +112946,10 @@ async function predict() {
       predictions = model.execute(modelInput);
       const img_clone = tf.reshape(img, [model_height, model_width, 3]); //.toFloat().div(tf.scalar(255));
 
-      let pred_mask = tf.reshape(predictions, [model_height, model_width, 1]); //.toFloat().div(tf.scalar(20));
-
+      let pred_mask = tf.reshape(predictions, [model_height, model_width, 1]);
       pred_mask = tf.sub(pred_mask, 0.5);
       pred_mask = tf.maximum(pred_mask, 0);
-      pred_mask = tf.mul(pred_mask, 2); //pred_mask = tf.where(pred_mask.greater(tf.scalar(0.5)), pred_mask, tf.scalar(0));
+      pred_mask = tf.mul(pred_mask, 2);
 
       if (isCustomBackground && bkg_data.length > 0) {
         const this_bkg = new ImageData(bkg_data, model_width, model_height);
@@ -112964,7 +112969,8 @@ async function predict() {
     });
     ui.setPredictedMaskClass(output[0]); //340sec
 
-    ui.setPredictedComboClass(output[1]);
+    ui.setPredictedComboClass(output[1]); //prevMask = output[0].reshape([1, model_height, model_width]);
+
     output[0].dispose();
     output[1].dispose();
     await tf.nextFrame();
@@ -113026,7 +113032,26 @@ customBKGSelect.addEventListener("change", () => {
 
 async function init() {
   await webcam.setup();
-  model = await loadModel(); // Warm up the model. This uploads weights to the GPU and compiles the WebGL
+  model = await loadModel();
+  /*const img_bkg = new Image();
+  img_bkg.src = "./images/jefry233.jpg";
+  img_bkg.onload = function(){
+    let img = tf.browser.fromPixels( img_bkg, 4).toFloat();
+    let modelInput = img.expandDims(0);
+    //modelInput = tf.sub(modelInput, [123.68, 116.78, 103.94, 255]);
+    modelInput = tf.mul(tf.sub(modelInput, [123.68, 116.78, 103.94, 0]),[0.017, 0.017, 0.017, 0]);
+    
+    //convert from RGBA to BGRA
+    let modelInputColorPlanes = tf.unstack(modelInput, 3);
+    modelInput = tf.stack([modelInputColorPlanes[2], modelInputColorPlanes[1], modelInputColorPlanes[0], modelInputColorPlanes[3]], 3);
+    modelInputColorPlanes[0].mean().print();
+    modelInputColorPlanes[1].mean().print()
+    modelInputColorPlanes[2].mean().print()
+    modelInputColorPlanes[3].mean().print()
+     predictions = model.execute(modelInput);
+    console.log(predictions.dataSync());
+  }*/
+  // Warm up the model. This uploads weights to the GPU and compiles the WebGL
   // programs so the first time we collect data from the webcam it will be
   // quick.
 
