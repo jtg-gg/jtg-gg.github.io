@@ -18,7 +18,7 @@ limitations under the License.
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <title>Portrait Segmentation</title>
-  <link rel="stylesheet" href="./styles.8986bff4.css">
+  <link rel="stylesheet" href="styles.b92bc548.css">
 </head>
 <body>
 
@@ -71,7 +71,12 @@ limitations under the License.
       <br>
       <!-- container video Matted -->
       <div id="matted">
-        Matted frame<br><br>
+        Matted frame<br>
+        <select name="target_size" id="target_size" style="width: 120px; font-size:1rem" tabindex="1">
+          <option value="0">Min</option>
+          <option value="0.5" selected="selected">50%</option>
+          <option value="1.0">100%</option>
+        </select><br>
         <canvas id="combo_class"></canvas>
       </div>
       <br>
@@ -86,6 +91,6 @@ limitations under the License.
 <!--
 https://www.torontopubliclibrary.ca/content/branches/images/dawes-road-library-exterior.jpg
 -->
-  <script src="./tf.e31bb0bc.js"></script>
+  <script src="tf.4e9d08ea.js"></script>
 </body>
 </html>
