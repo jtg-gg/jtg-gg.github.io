@@ -112720,9 +112720,9 @@ class Webcam {
    */
   constructor(webcamElement) {
     this.webcamElement = webcamElement;
+    this.scaleUp = true;
   }
   /**
-   * Captures a frame from the webcam and normalizes it between -1 and 1.
    * Returns a batched image (1-element batch) of shape [1, w, h, c].
    */
 
@@ -112731,16 +112731,15 @@ class Webcam {
     return tf.tidy(() => {
       // Reads the image as a Tensor from the webcam <video> element.
       const webcamImage = tf.browser.fromPixels(this.webcamElement, 4);
-      return this.resizeAndPad(webcamImage).expandDims(0);
+      const modelInput = this.resizeAndPad(webcamImage);
+      return [modelInput.expandDims(0), this.scaleUp ? tf.image.resizeNearestNeighbor(webcamImage, [360, 640]) : modelInput];
       const resizedWebcamImage = tf.image.resizeBilinear(webcamImage, [this.webcamElement.height, this.webcamElement.width]); // Crop the image so we're using the center square of the rectangular
       // webcam.
 
       const croppedImage = this.cropImage(resizedWebcamImage); // Expand the outer most dimension so we have a batch size of 1.
 
-      const batchedImage = croppedImage.expandDims(0); // Normalize the image between -1 and 1. The image comes in between 0-255,
-      // so we divide by 127 and subtract 1.
-
-      return batchedImage; //.toFloat().div(tf.scalar(255)) //.sub(tf.scalar(1));
+      const batchedImage = croppedImage.expandDims(0);
+      return batchedImage;
     });
   }
 
@@ -112773,7 +112772,7 @@ class Webcam {
       pad_left = pad_right = pad_bot = pad_top = 0;
     }
 
-    const resized = tf.image.resizeBilinear(img, [new_h, new_w]);
+    const resized = tf.image.resizeNearestNeighbor(img, [new_h, new_w]);
     return resized.pad([[pad_top, pad_bot], [pad_left, pad_right], [0, 0]], 128);
   }
   /**
@@ -112809,6 +112808,13 @@ class Webcam {
   }
 
   async setup() {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+
+    if (urlParams.get('scaleUp') === "false") {
+      this.scaleUp = false;
+    }
+
     return new Promise((resolve, reject) => {
       const navigatorAny = navigator;
       navigator.getUserMedia = navigator.getUserMedia || navigatorAny.webkitGetUserMedia || navigatorAny.mozGetUserMedia || navigatorAny.msGetUserMedia;
@@ -112874,6 +112880,8 @@ const LOCAL_MODEL_JSON_URL = './mobilenetv2_supervisely+webcam_288x160/model.jso
 
 const model_width = 288;
 const model_height = 160;
+var target_height;
+var target_width;
 /**
 *  Keep track of the frame rate in a queue
 **/
@@ -112896,7 +112904,7 @@ webcamElement.width = model_width;
 webcamElement.height = model_height;
 const webcam = new _webcam.Webcam(webcamElement);
 const customBKGSelect = document.getElementById("custom_bkg");
-var bkg_data = [];
+var bkg_tf = null;
 var predictions = 0;
 /**
 * Load the model locally
@@ -112906,6 +112914,14 @@ let model;
 
 async function loadModel() {
   //tf.disableDeprecationWarnings();
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+
+  if (urlParams.get('fp32') !== "true") {
+    tf.ENV.set('WEBGL_FORCE_F16_TEXTURES', true);
+    tf.ENV.set('WEBGL_RENDER_FLOAT32_ENABLED', false);
+  }
+
   tf.enableProdMode();
   const model = await tf.loadGraphModel(LOCAL_MODEL_JSON_URL);
   console.log("loadModel " + tf.getBackend());
@@ -112932,38 +112948,40 @@ async function predict() {
     init_time = performance.now();
     const output = tf.tidy(() => {
       // Capture the frame from the webcam.
-      let img = webcam.capture().toFloat();
-      let modelInput = tf.mul(tf.sub(img, [123.68, 116.78, 103.94, 0]), [0.017, 0.017, 0.017, 0]); //convert from RGBA to BGRA
+      let webCamCaptures = webcam.capture();
+      let modelInput = webCamCaptures[0].toFloat();
+      modelInput = tf.mul(tf.sub(modelInput, [123.68, 116.78, 103.94, 0]), [0.017, 0.017, 0.017, 0]); //convert from RGBA to BGRA
 
       let modelInputColorPlanes = tf.unstack(modelInput, 3);
       modelInput = tf.stack([modelInputColorPlanes[2], modelInputColorPlanes[1], modelInputColorPlanes[0], modelInputColorPlanes[3]], 3);
       if (prevMask != 0) prevMask.dispose(); //modelInput = tf.transpose(modelInput, [0, 3, 1, 2]);
 
-      img = img.div(tf.scalar(255));
-      img = img.slice([0, 0, 0, 0], [1, model_height, model_width, 3]); // Inference
+      let img = webCamCaptures[1].toFloat().div(tf.scalar(255));
+      img = img.slice([0, 0, 0], [target_height, target_width, 3]); // Inference
       //predictions = model.predict(img);
 
       predictions = model.execute(modelInput);
-      const img_clone = tf.reshape(img, [model_height, model_width, 3]); //.toFloat().div(tf.scalar(255));
+      const img_clone = img; //tf.reshape( img, [model_height, model_width, 3]);//.toFloat().div(tf.scalar(255));
 
       let pred_mask = tf.reshape(predictions, [model_height, model_width, 1]);
       pred_mask = tf.sub(pred_mask, 0.5);
       pred_mask = tf.maximum(pred_mask, 0);
       pred_mask = tf.mul(pred_mask, 2);
 
-      if (isCustomBackground && bkg_data.length > 0) {
-        const this_bkg = new ImageData(bkg_data, model_width, model_height);
-        const mixed = tf.mul(img_clone, pred_mask);
-        const bkg_tf = tf.browser.fromPixels(this_bkg);
-        const bkg_norm = tf.div(tf.cast(bkg_tf, "float32"), tf.scalar(255.)); //Reverse mask: abs(pred_mask - 1)
+      if (isCustomBackground && bkg_tf != null) {
+        //const this_bkg = new ImageData(bkg_data, target_width, target_height);
+        const scaledPredMask = tf.image.resizeNearestNeighbor(pred_mask, [target_height, target_width]);
+        const mixed = tf.mul(img_clone, scaledPredMask); //const bkg_tf = tf.browser.fromPixels( this_bkg );
 
-        const rev_pred_mask = tf.abs(tf.sub(pred_mask, tf.scalar(1.)));
+        const bkg_norm = tf.div(bkg_tf, tf.scalar(255.)); //Reverse mask: abs(pred_mask - 1)
+
+        const rev_pred_mask = tf.abs(tf.sub(scaledPredMask, tf.scalar(1.)));
         const bkg_matted = tf.mul(bkg_norm, rev_pred_mask);
         const combo = tf.add(mixed, bkg_matted);
         const predict_t = performance.now();
         return [pred_mask, combo];
       } else {
-        const combo = tf.mul(img_clone, pred_mask);
+        const combo = tf.mul(img_clone, tf.image.resizeBilinear(pred_mask, [target_height, target_width]));
         return [pred_mask, combo];
       }
     });
@@ -113013,17 +113031,17 @@ customBKGSelect.addEventListener("change", () => {
     //create canvas
     const canvas_bkg = document.createElement("canvas");
     canvas_bkg.id = "canvas_bkg";
-    canvas_bkg.width = model_width;
-    canvas_bkg.height = model_height;
+    canvas_bkg.width = target_width;
+    canvas_bkg.height = target_height;
     const context = canvas_bkg.getContext("2d"); //create new image
 
     const img_bkg = new Image();
     img_bkg.src = img_url;
 
     img_bkg.onload = function () {
-      context.drawImage(img_bkg, 0, 0, model_width, model_height);
-      const bkg_ImgData = context.getImageData(0, 0, model_width, model_height);
-      bkg_data = bkg_ImgData.data;
+      context.drawImage(img_bkg, 0, 0, target_width, target_height);
+      const bkg_ImgData = context.getImageData(0, 0, target_width, target_height);
+      bkg_tf = tf.browser.fromPixels(bkg_ImgData).toFloat(); //bkg_data = bkg_ImgData.data
     };
 
     isCustomBackground = true;
@@ -113049,6 +113067,7 @@ async function init() {
     modelInputColorPlanes[2].mean().print()
     modelInputColorPlanes[3].mean().print()
      predictions = model.execute(modelInput);
+    console.log(predictions);
     console.log(predictions.dataSync());
   }*/
   // Warm up the model. This uploads weights to the GPU and compiles the WebGL
@@ -113056,7 +113075,10 @@ async function init() {
   // quick.
 
   tf.tidy(() => {
-    let inputImage = webcam.capture().toFloat().div(tf.scalar(255)); //inputImage = tf.transpose(inputImage, [0, 3, 1, 2]);
+    let captureResults = webcam.capture();
+    let inputImage = captureResults[0].toFloat().div(tf.scalar(255));
+    target_height = captureResults[1].shape[0];
+    target_width = captureResults[1].shape[1]; //inputImage = tf.transpose(inputImage, [0, 3, 1, 2]);
 
     model.execute(inputImage);
   });
