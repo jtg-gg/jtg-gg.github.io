@@ -112763,14 +112763,14 @@ class Webcam {
       pad_bot = Math.ceil(pad_vert);
       new_h = this.webcamElement.height - pad_top - pad_bot;
       pad_left = pad_right = 0;
-      /*} else if (aspect < input_aspect) {
-          new_h = this.webcamElement.height;
-          new_w = Math.round(new_h*aspect);
-          const pad_horz = (this.webcamElement.width - new_w) / 2;
-          pad_left = Math.floor(pad_horz);
-          pad_right = Math.ceil(pad_horz);
-          new_w = this.webcamElement.width - pad_left - pad_right;
-          pad_top = pad_bot = 0;*/
+    } else if (aspect < input_aspect) {
+      new_h = this.webcamElement.height;
+      new_w = Math.round(new_h * aspect);
+      const pad_horz = (this.webcamElement.width - new_w) / 2;
+      pad_left = Math.floor(pad_horz);
+      pad_right = Math.ceil(pad_horz);
+      new_w = this.webcamElement.width - pad_left - pad_right;
+      pad_top = pad_bot = 0;
     } else {
       new_h = this.webcamElement.height;
       new_w = this.webcamElement.width;
@@ -112813,11 +112813,10 @@ class Webcam {
   }
 
   async setup() {
-    /*const queryString = window.location.search;
+    const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
-    if (urlParams.get('scaleUp') === "false") {
-      this.scaleUp = false;
-    }*/
+    let requestWidth = urlParams.get('width');
+    let requestHeight = urlParams.get('height');
     return new Promise((resolve, reject) => {
       const navigatorAny = navigator;
       navigator.getUserMedia = navigator.getUserMedia || navigatorAny.webkitGetUserMedia || navigatorAny.mozGetUserMedia || navigatorAny.msGetUserMedia;
@@ -112825,8 +112824,8 @@ class Webcam {
       if (navigator.getUserMedia) {
         navigator.getUserMedia({
           video: {
-            width: 1280,
-            height: 720
+            width: requestWidth,
+            height: requestHeight
           }
         }, stream => {
           this.webcamElement.srcObject = stream;
@@ -112934,6 +112933,39 @@ async function loadModel() {
 function get_background() {
   ui.load_bgd_image();
 }
+
+function cropAndResize(img) {
+  const height = target_height;
+  const width = target_width;
+  const aspect = width / height;
+  const input_aspect = img.shape[1] / img.shape[0];
+  var new_w, new_h, pad_vert, pad_top, pad_bot, pad_left, pad_right;
+
+  if (aspect > input_aspect) {
+    new_w = img.shape[1];
+    new_h = Math.round(new_w / aspect);
+    const pad_vert = (img.shape[1] - new_h) / 2;
+    pad_top = Math.floor(pad_vert);
+    pad_bot = Math.ceil(pad_vert);
+    new_h = img.shape[0] - pad_top - pad_bot;
+    pad_left = pad_right = 0;
+  } else if (aspect < input_aspect) {
+    new_h = img.shape[0];
+    new_w = Math.round(new_h * aspect);
+    const pad_horz = (img.shape[1] - new_w) / 2;
+    pad_left = Math.floor(pad_horz);
+    pad_right = Math.ceil(pad_horz);
+    new_w = img.shape[1] - pad_left - pad_right;
+    pad_top = pad_bot = 0;
+  } else {
+    new_h = img.shape[0];
+    new_w = img.shape[1];
+    pad_left = pad_right = pad_bot = pad_top = 0;
+  }
+
+  const croppedImg = img.slice([pad_top, pad_left, 0], [new_h, new_w, 1]);
+  return tf.image.resizeNearestNeighbor(croppedImg, [target_height, target_width]);
+}
 /**
  * Prediction
  */
@@ -112977,12 +113009,10 @@ async function predict() {
       pred_mask = tf.sub(pred_mask, 0.5);
       pred_mask = tf.maximum(pred_mask, 0);
       pred_mask = tf.mul(pred_mask, 2);
+      const scaledPredMask = cropAndResize(pred_mask);
 
       if (isCustomBackground && bkg_tf != null) {
-        //const this_bkg = new ImageData(bkg_data, target_width, target_height);
-        const scaledPredMask = tf.image.resizeNearestNeighbor(pred_mask, [target_height, target_width]);
-        const mixed = tf.mul(img_clone, scaledPredMask); //const bkg_tf = tf.browser.fromPixels( this_bkg );
-
+        const mixed = tf.mul(img_clone, scaledPredMask);
         const bkg_norm = tf.div(bkg_tf, tf.scalar(255.)); //Reverse mask: abs(pred_mask - 1)
 
         const rev_pred_mask = tf.abs(tf.sub(scaledPredMask, tf.scalar(1.)));
@@ -112991,7 +113021,7 @@ async function predict() {
         const predict_t = performance.now();
         return [pred_mask, combo];
       } else {
-        const combo = tf.mul(img_clone, tf.image.resizeBilinear(pred_mask, [target_height, target_width]));
+        const combo = tf.mul(img_clone, scaledPredMask);
         return [pred_mask, combo];
       }
     });
@@ -113099,4 +113129,4 @@ async function init() {
 
 init();
 },{"@tensorflow/tfjs":"fHyk","./ui":"lA8h","./webcam":"aT2e"}]},{},["Focm"], null)
-//# sourceMappingURL=tf.4e9d08ea.js.map
+//# sourceMappingURL=tf.54f9bea5.js.map
