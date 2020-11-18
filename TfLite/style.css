@@ -48,6 +48,10 @@ h1 {
     padding-bottom: 10px;
 }
 
+.content .topcontrol  {
+    text-align: center;
+}
+
 div.top:after {
   content: "";
   display: table;
