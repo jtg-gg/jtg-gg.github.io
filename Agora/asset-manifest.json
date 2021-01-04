@@ -1,0 +1,24 @@
+{
+  "files": {
+    "main.css": "/static/css/main.c4d38b88.chunk.css",
+    "main.js": "/static/js/main.bf2133ea.chunk.js",
+    "main.js.map": "/static/js/main.bf2133ea.chunk.js.map",
+    "runtime-main.js": "/static/js/runtime-main.cef06927.js",
+    "runtime-main.js.map": "/static/js/runtime-main.cef06927.js.map",
+    "static/js/2.e0afaa65.chunk.js": "/static/js/2.e0afaa65.chunk.js",
+    "static/js/2.e0afaa65.chunk.js.map": "/static/js/2.e0afaa65.chunk.js.map",
+    "index.html": "/index.html",
+    "precache-manifest.d8eb5f46d6c328c6fae137b629f77682.js": "/precache-manifest.d8eb5f46d6c328c6fae137b629f77682.js",
+    "service-worker.js": "/service-worker.js",
+    "static/css/main.c4d38b88.chunk.css.map": "/static/css/main.c4d38b88.chunk.css.map",
+    "static/js/2.e0afaa65.chunk.js.LICENSE.txt": "/static/js/2.e0afaa65.chunk.js.LICENSE.txt",
+    "static/js/TfLiteWorker.0c974880.worker.js": "/static/js/TfLiteWorker.0c974880.worker.js",
+    "static/js/TfLiteWorker.0c974880.worker.js.map": "/static/js/TfLiteWorker.0c974880.worker.js.map"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.cef06927.js",
+    "static/js/2.e0afaa65.chunk.js",
+    "static/css/main.c4d38b88.chunk.css",
+    "static/js/main.bf2133ea.chunk.js"
+  ]
+}
