@@ -1,24 +1,24 @@
 {
   "files": {
-    "main.css": "/Agora/static/css/main.c4d38b88.chunk.css",
-    "main.js": "/Agora/static/js/main.4a007f1a.chunk.js",
-    "main.js.map": "/Agora/static/js/main.4a007f1a.chunk.js.map",
-    "runtime-main.js": "/Agora/static/js/runtime-main.cf1254be.js",
-    "runtime-main.js.map": "/Agora/static/js/runtime-main.cf1254be.js.map",
-    "static/js/2.7d9ee0b7.chunk.js": "/Agora/static/js/2.7d9ee0b7.chunk.js",
-    "static/js/2.7d9ee0b7.chunk.js.map": "/Agora/static/js/2.7d9ee0b7.chunk.js.map",
-    "index.html": "/Agora/index.html",
-    "precache-manifest.67a9f09e69587318cabe1159ca9045f6.js": "/Agora/precache-manifest.67a9f09e69587318cabe1159ca9045f6.js",
-    "service-worker.js": "/Agora/service-worker.js",
-    "static/css/main.c4d38b88.chunk.css.map": "/Agora/static/css/main.c4d38b88.chunk.css.map",
-    "static/js/2.7d9ee0b7.chunk.js.LICENSE.txt": "/Agora/static/js/2.7d9ee0b7.chunk.js.LICENSE.txt",
-    "static/js/TfLiteWorker.7ed25d6f.worker.js": "/Agora/static/js/TfLiteWorker.7ed25d6f.worker.js",
-    "static/js/TfLiteWorker.7ed25d6f.worker.js.map": "/Agora/static/js/TfLiteWorker.7ed25d6f.worker.js.map"
+    "main.css": "./static/css/main.c4d38b88.chunk.css",
+    "main.js": "./static/js/main.0d208873.chunk.js",
+    "main.js.map": "./static/js/main.0d208873.chunk.js.map",
+    "runtime-main.js": "./static/js/runtime-main.da66a749.js",
+    "runtime-main.js.map": "./static/js/runtime-main.da66a749.js.map",
+    "static/js/2.174a3242.chunk.js": "./static/js/2.174a3242.chunk.js",
+    "static/js/2.174a3242.chunk.js.map": "./static/js/2.174a3242.chunk.js.map",
+    "index.html": "./index.html",
+    "precache-manifest.e355c1aca48f307f0f4352162805f5fd.js": "./precache-manifest.e355c1aca48f307f0f4352162805f5fd.js",
+    "service-worker.js": "./service-worker.js",
+    "static/css/main.c4d38b88.chunk.css.map": "./static/css/main.c4d38b88.chunk.css.map",
+    "static/js/2.174a3242.chunk.js.LICENSE.txt": "./static/js/2.174a3242.chunk.js.LICENSE.txt",
+    "static/js/TfLiteWorker.bf21cf03.worker.js": "./static/js/TfLiteWorker.bf21cf03.worker.js",
+    "static/js/TfLiteWorker.bf21cf03.worker.js.map": "./static/js/TfLiteWorker.bf21cf03.worker.js.map"
   },
   "entrypoints": [
-    "static/js/runtime-main.cf1254be.js",
-    "static/js/2.7d9ee0b7.chunk.js",
+    "static/js/runtime-main.da66a749.js",
+    "static/js/2.174a3242.chunk.js",
     "static/css/main.c4d38b88.chunk.css",
-    "static/js/main.4a007f1a.chunk.js"
+    "static/js/main.0d208873.chunk.js"
   ]
 }
